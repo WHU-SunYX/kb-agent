@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+
+# Local configuration / secrets
+.env
+*.local.yaml
+
+# Runtime data
+/data/*
+!/data/dev/
+/data/dev/*
+!/data/dev/.gitkeep
+
+# IDE
+.idea/
+.vscode/

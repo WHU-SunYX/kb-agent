@@ -1,0 +1,11 @@
+app:
+  name: kb-agent
+  environment: development
+
+kb:
+  default_tenant: default
+  default_domain: ai-ssd
+
+raw_store:
+  type: local
+  local_root: ./data/dev/raw

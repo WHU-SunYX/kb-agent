@@ -1,0 +1,32 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="PyPackageRequirementsInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredPackages">
+        <list>
+          <option value="zentorch-weekly" />
+          <option value="pandas" />
+          <option value="matplotlib" />
+          <option value="seaborn" />
+          <option value="datasets" />
+          <option value="scipy" />
+          <option value="plotly" />
+          <option value="tensorizer" />
+          <option value="fastsafetensors" />
+          <option value="instanttensor" />
+          <option value="runai-model-streamer" />
+          <option value="av" />
+          <option value="soundfile" />
+          <option value="helion" />
+          <option value="smg-grpc-servicer" />
+          <option value="mistral_common" />
+          <option value="opentelemetry-sdk" />
+          <option value="opentelemetry-api" />
+          <option value="opentelemetry-exporter-otlp" />
+          <option value="opentelemetry-semantic-conventions-ai" />
+        </list>
+      </option>
+    </inspection_tool>
+    <inspection_tool class="SqlNoDataSourceInspection" enabled="false" level="WARNING" enabled_by_default="false" />
+  </profile>
+</component>
