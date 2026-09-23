@@ -12,6 +12,7 @@ license = { text = "Proprietary" }
 authors = [
   { name = "kb-agent developers" }
 ]
+
 dependencies = [
   "pydantic>=2.7,<3.0",
   "pydantic-settings>=2.2,<3.0",
@@ -22,6 +23,38 @@ dependencies = [
 dev = [
   "pytest>=8.0,<9.0",
   "ruff>=0.12,<1.0",
+  "httpx>=0.27,<1.0",
+]
+
+s3 = [
+  "boto3>=1.35,<2.0",
+]
+
+documents = [
+  "docling>=2.120,<3.0",
+]
+
+security = [
+  "detect-secrets>=1.5,<2.0",
+  "presidio-analyzer>=2.2.363,<3.0",
+]
+
+embedding = [
+  "FlagEmbedding>=1.4.2,<2.0",
+]
+
+milvus = [
+  "pymilvus>=2.5,<3.0",
+]
+
+mcp = [
+  "mcp>=1.0",
+]
+
+api = [
+  "fastapi>=0.115,<1.0",
+  "uvicorn>=0.34,<1.0",
+  "python-multipart>=0.0.20,<1.0",
 ]
 
 [tool.setuptools]

@@ -9,3 +9,40 @@ kb:
 raw_store:
   type: local
   local_root: ./data/dev/raw
+
+embedding:
+  backend: local_bge
+  model_name_or_path: /home/sunyaxin/models/BAAI/bge-m3
+  devices: "cpu"   # null使用全部GPU；"cuda:3"使用GPU3；"cpu"使用CPU
+  use_fp16: false
+  use_bf16: false
+  normalize_embeddings: true
+  batch_size: 32
+  query_max_length: 512
+  passage_max_length: 512
+  expected_dimension: 1024
+  pooling_method: cls
+  cache_dir: null
+  trust_remote_code: false
+
+security:
+  # Presidio PII detection only; does not change BLOCK/MARK/REDACT policies.
+  # Prefer CPU for the default spaCy model to avoid unexpected GPU0 allocation.
+  pii_device: "cpu"
+
+milvus:
+  uri: http://192.168.121.78:19530
+  collection_name: kb_chunks
+  dimension: 1024
+  metric_type: COSINE
+  consistency_level: Bounded
+  enable_bm25: true
+
+mcp:
+  enabled: true
+  name: kb-agent
+  transport: stdio
+  # Presentation limits for LLM-facing search results; FastAPI stays complete.
+  # Adjust to the Agent LLM's available context; these are character, not token limits.
+  search_max_results: 5
+  search_max_chars: 10000

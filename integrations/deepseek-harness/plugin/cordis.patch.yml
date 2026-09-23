@@ -1,0 +1,33 @@
+# kb-agent DeepSeek Harness integration.
+#
+# This is an installable external bundle. It intentionally does NOT patch any
+# file in the DeepSeek Harness source checkout.
+#
+# Environment overrides:
+#   KB_AGENT_PYTHON
+#   KB_AGENT_PROJECT_ROOT
+#   KB_AGENT_PYTHONPATH
+#   KB_AGENT_API_BASE_URL
+- insert:
+    # Step 14.5: read-only knowledge access for the model/agent plane.
+    - id: kb-agent-mcp
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: kb_agent
+        transport: stdio
+        command: !!js >-
+          process.env.KB_AGENT_PYTHON?.trim() || '/home/sunyaxin/miniforge3/envs/XInfer/bin/python'
+        args: [-m, kb_agent.mcp.server]
+        cwd: !!js >-
+          process.env.KB_AGENT_PROJECT_ROOT?.trim() || '/home/sunyaxin/pycharm-project/kb-agent'
+        env:
+          PYTHONPATH: !!js >-
+            process.env.KB_AGENT_PYTHONPATH?.trim() || '/home/sunyaxin/pycharm-project/kb-agent/src'
+
+    # Step 14.6: Host proxy + browser slot occupants for human/admin ingestion.
+    - id: kb-agent-ui
+      name: '@kb-agent/dsh-kb-agent'
+      config:
+        apiBaseUrl: !!js >-
+          process.env.KB_AGENT_API_BASE_URL?.trim() || 'http://127.0.0.1:8080'
+        ingestPath: /api/v1/ingest/upload
