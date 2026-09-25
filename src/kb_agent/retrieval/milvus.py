@@ -8,10 +8,12 @@ and optionally uses Milvus' built-in BM25 Function for full-text retrieval.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import json
 from typing import Any, Iterable, Protocol, Sequence
 
 from kb_agent.models import KnowledgeChunk
 from kb_agent.retrieval.embedding import EmbeddingBackend, embed_chunks
+from kb_agent.retrieval.filters import RetrievalFilters, RetrievalScope
 from kb_agent.retrieval.schema import (
     MilvusSchemaConfig,
     build_pymilvus_index_params,
@@ -225,7 +227,8 @@ class MilvusStore:
         self,
         vector: Sequence[float],
         limit: int = 10,
-        filter_expr: str | None = None,
+        filters: RetrievalFilters | None = None,
+        scope: RetrievalScope | None = None,
     ) -> list[dict[str, Any]]:
         self.ensure_collection()
         client = self._ensure_client()
@@ -248,6 +251,7 @@ class MilvusStore:
             "consistency_level": self.config.consistency_level,
         }
 
+        filter_expr = _compile_milvus_filter(filters=filters, scope=scope)
         if filter_expr:
             kwargs["filter"] = filter_expr
 
@@ -257,7 +261,8 @@ class MilvusStore:
         self,
         text: str,
         limit: int = 10,
-        filter_expr: str | None = None,
+        filters: RetrievalFilters | None = None,
+        scope: RetrievalScope | None = None,
     ) -> list[dict[str, Any]]:
         if not self.config.enable_bm25:
             return []
@@ -277,10 +282,37 @@ class MilvusStore:
             "consistency_level": self.config.consistency_level,
         }
 
+        filter_expr = _compile_milvus_filter(filters=filters, scope=scope)
         if filter_expr:
             kwargs["filter"] = filter_expr
 
         return _normalize_search_results(client.search(**kwargs))
+
+
+def _compile_milvus_filter(
+    *,
+    filters: RetrievalFilters | None = None,
+    scope: RetrievalScope | None = None,
+) -> str | None:
+    """Compile trusted scope + backend-neutral filters to Milvus syntax.
+
+    Field names are fixed by application models, never model-generated text.
+    Values are serialized as JSON strings so quotes/backslashes are escaped
+    before the expression reaches Milvus.
+    """
+    items: list[tuple[str, str]] = []
+    if scope is not None:
+        items.extend(scope.items())
+    if filters is not None:
+        items.extend(filters.items())
+    if not items:
+        return None
+
+    clauses = [
+        f"{field_name} == {json.dumps(value, ensure_ascii=False)}"
+        for field_name, value in items
+    ]
+    return " and ".join(clauses)
 
 
 class MilvusChunkIndexer:

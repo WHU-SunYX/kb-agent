@@ -51,8 +51,15 @@ def direct(args):
         raise ValueError('Template has no request/header. Use a successful KB-agent session.jsonl')
     header = headers[0]
     tools = header.get('tools', [])
-    if not any(t.get('name') == KB_TOOL for t in tools):
+    kb_descriptor = next((t for t in tools if t.get('name') == KB_TOOL), None)
+    if kb_descriptor is None:
         raise ValueError(f'Template does not advertise {KB_TOOL}')
+    kb_properties = kb_descriptor.get('parameters', {}).get('properties', {})
+    if 'filter_expr' in kb_properties:
+        raise ValueError(
+            'Template advertises deprecated raw filter_expr; capture a fresh '
+            'successful session after updating/restarting the kb-agent MCP server.'
+        )
     # Harness's tool descriptors use {name, description, parameters}; wrap as OpenAI tools.
     api_tools = [{'type': 'function', 'function': {
         'name': t['name'], 'description': t.get('description', ''),

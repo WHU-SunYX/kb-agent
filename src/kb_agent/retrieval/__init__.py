@@ -1,5 +1,10 @@
 """Retrieval-layer adapters and services."""
 
+from kb_agent.retrieval.filters import (
+    RetrievalFilterError,
+    RetrievalFilters,
+    RetrievalScope,
+)
 from kb_agent.retrieval.embedding import (
     ChunkEmbeddingBatch,
     EmbeddingBackend,
@@ -15,6 +20,9 @@ from kb_agent.retrieval.embedding import (
 
 __all__ = [
     "ChunkEmbeddingBatch",
+    "RetrievalFilterError",
+    "RetrievalFilters",
+    "RetrievalScope",
     "EmbeddingBackend",
     "EmbeddingBatch",
     "EmbeddingError",

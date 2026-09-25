@@ -18,28 +18,67 @@ _MAX_RESPONSE_BYTES = 10 * 1024 * 1024
 _DEFAULT_API_BASE_URL = "http://127.0.0.1:8080"
 
 
-def search_via_api(query: str, filter_expr: str | None = None) -> list[dict[str, Any]]:
-    """Invoke the existing FastAPI search endpoint and return its hit list.
+def search_via_api(
+    query: str,
+    *,
+    document_id: str | None = None,
+    domain: str | None = None,
+    project: str | None = None,
+    classification: str | None = None,
+    source_type: str | None = None,
+    provider: str | None = None,
+    source_id: str | None = None,
+    top_k: int = 10,
+) -> list[dict[str, Any]]:
+    """Invoke the FastAPI search endpoint using structured filters only.
 
     KB_AGENT_API_BASE_URL is a deployment setting, not an MCP tool argument.
     Only the fixed /api/v1/search path is reachable through this adapter.
     """
     if not isinstance(query, str) or not query.strip():
         raise ValueError("query must be a nonempty string")
-    if filter_expr is not None and not isinstance(filter_expr, str):
-        raise ValueError("filter_expr must be a string or None")
+    if not isinstance(top_k, int) or isinstance(top_k, bool) or not 1 <= top_k <= 100:
+        raise ValueError("top_k must be an integer between 1 and 100")
+
+    filters = {
+        name: value
+        for name, value in {
+            "document_id": document_id,
+            "domain": domain,
+            "project": project,
+            "classification": classification,
+            "source_type": source_type,
+            "provider": provider,
+            "source_id": source_id,
+        }.items()
+        if value is not None
+    }
+    for name, value in filters.items():
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError(f"{name} must be a nonempty string when provided")
+        filters[name] = value.strip()
 
     base_url = os.environ.get("KB_AGENT_API_BASE_URL", _DEFAULT_API_BASE_URL).strip()
     parsed = urlsplit(base_url)
     if parsed.scheme not in ("http", "https") or not parsed.netloc:
         raise RuntimeError("KB_AGENT_API_BASE_URL must be an HTTP(S) origin")
-    if parsed.username is not None or parsed.password is not None or parsed.query or parsed.fragment:
+    if (
+        parsed.username is not None
+        or parsed.password is not None
+        or parsed.query
+        or parsed.fragment
+    ):
         raise RuntimeError("KB_AGENT_API_BASE_URL must not contain credentials/query/fragment")
     url = base_url.rstrip("/") + "/api/v1/search"
 
-    payload = json.dumps(
-        {"query": query, "filter_expr": filter_expr}, ensure_ascii=False
-    ).encode("utf-8")
+    payload_document: dict[str, Any] = {
+        "query": query.strip(),
+        "top_k": top_k,
+    }
+    if filters:
+        payload_document["filters"] = filters
+
+    payload = json.dumps(payload_document, ensure_ascii=False).encode("utf-8")
     request = Request(
         url,
         data=payload,

@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Any, Protocol, Sequence
 
 from .embedding import EmbeddingBackend
+from .filters import RetrievalFilters, RetrievalScope
 
 
 class RetrievalError(RuntimeError):
@@ -13,10 +14,22 @@ class RetrievalError(RuntimeError):
 
 
 class VectorStoreProtocol(Protocol):
-    def search_dense(self, vector: Sequence[float], limit: int = 10, filter_expr: str | None = None) -> Any:
+    def search_dense(
+        self,
+        vector: Sequence[float],
+        limit: int = 10,
+        filters: RetrievalFilters | None = None,
+        scope: RetrievalScope | None = None,
+    ) -> Any:
         ...
 
-    def search_bm25(self, text: str, limit: int = 10, filter_expr: str | None = None) -> Any:
+    def search_bm25(
+        self,
+        text: str,
+        limit: int = 10,
+        filters: RetrievalFilters | None = None,
+        scope: RetrievalScope | None = None,
+    ) -> Any:
         ...
 
 
@@ -41,34 +54,43 @@ class HybridRetrievalService:
         embedding: EmbeddingBackend,
         store: VectorStoreProtocol,
         config: RetrievalConfig | None = None,
+        *,
+        tenant_id: str | None = None,
     ):
         self.embedding = embedding
         self.store = store
         self.config = config or RetrievalConfig()
+        self.scope = RetrievalScope(tenant_id) if tenant_id is not None else None
 
     def search(
         self,
         query: str,
-        filter_expr: str | None = None,
+        filters: RetrievalFilters | None = None,
+        limit: int | None = None,
     ) -> list[RetrievalHit]:
+        requested_limit = self.config.top_k_final if limit is None else limit
+        if requested_limit <= 0:
+            raise ValueError("limit must be greater than 0")
 
         query_vec = self.embedding.embed_queries([query]).vectors[0]
 
         dense = self.store.search_dense(
             query_vec,
-            limit=self.config.top_k_dense,
-            filter_expr=filter_expr,
+            limit=max(self.config.top_k_dense, requested_limit),
+            filters=filters,
+            scope=self.scope,
         )
 
         bm25 = []
         if hasattr(self.store, "search_bm25"):
             bm25 = self.store.search_bm25(
                 query,
-                limit=self.config.top_k_bm25,
-                filter_expr=filter_expr,
+                limit=max(self.config.top_k_bm25, requested_limit),
+                filters=filters,
+                scope=self.scope,
             )
 
-        return self._fuse(dense, bm25)[: self.config.top_k_final]
+        return self._fuse(dense, bm25)[:requested_limit]
 
     def _fuse(self, dense: Any, bm25: Any) -> list[RetrievalHit]:
         """Initial placeholder fusion.

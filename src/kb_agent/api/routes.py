@@ -111,9 +111,15 @@ def create_router(
                 detail="retrieval service unavailable",
             )
 
+        filters = (
+            req.filters.to_retrieval_filters()
+            if req.filters is not None
+            else None
+        )
         hits = retrieval_service.search(
             req.query,
-            filter_expr=req.filter_expr,
+            filters=filters,
+            limit=req.top_k,
         )
 
         return SearchResponse(

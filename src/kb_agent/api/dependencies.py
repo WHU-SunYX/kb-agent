@@ -96,6 +96,7 @@ def get_retriever():
     return HybridRetrievalService(
         embedding=get_embedding_backend(),
         store=get_milvus_store(),
+        tenant_id=get_settings().kb.default_tenant,
     )
 
 

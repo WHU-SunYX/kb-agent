@@ -103,3 +103,48 @@ The MCP tool is read-only and is normally spawned automatically by Harness.
 A standalone `python -m kb_agent.mcp.server` is not the Harness process's
 Tool Call log. Examine the Harness session events for `tool/call`, `tool/result`
 and context compaction; use MCP Inspector to test the server independently.
+
+## Structured search filters
+
+`kb_search` intentionally does **not** expose a raw Milvus `filter_expr` to the
+LLM.  The tool accepts only schema-backed exact-match fields such as `domain`,
+`project`, `source_type`, `provider`, `classification`, `source_id`, and
+`document_id`.  The MCP HTTP adapter sends those fields as a structured
+`filters` object and the FastAPI/retrieval stack compiles them to the Milvus
+boolean expression internally.
+
+This boundary is deliberate:
+
+- an LLM cannot invent backend syntax such as `type:document` or
+  `workspace-write` and pass it directly to Milvus;
+- field names come from the application schema rather than model-generated
+  text;
+- string values are quoted by the backend compiler;
+- `tenant_id` is an access-scope field and is injected from trusted server-side
+  configuration instead of being exposed as an MCP tool argument;
+- stale/unknown HTTP fields are rejected with FastAPI/Pydantic validation
+  instead of surfacing as a Milvus query-plan HTTP 500.
+
+Example MCP intent:
+
+```text
+query="STAR2000 DMA optimization"
+source_type="document"
+project="engram"
+```
+
+Equivalent FastAPI payload:
+
+```json
+{
+  "query": "STAR2000 DMA optimization",
+  "filters": {
+    "source_type": "document",
+    "project": "engram"
+  },
+  "top_k": 10
+}
+```
+
+The concrete Milvus expression is an implementation detail and is never part
+of the public tool contract.
